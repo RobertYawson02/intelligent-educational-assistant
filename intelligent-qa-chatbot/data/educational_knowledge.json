@@ -1,0 +1,46 @@
+[{
+        "topic": "Artificial Intelligence",
+
+        "keywords": [
+            "ai",
+            "artificial intelligence",
+            "machine intelligence"
+        ],
+
+        "definition": "Artificial Intelligence is the ability of computer systems to perform tasks that normally require human intelligence.",
+
+        "explanation": "AI allows machines to learn from data, understand language, solve problems and make decisions.",
+
+        "examples": [
+            "Chatbots",
+            "Virtual assistants",
+            "Recommendation systems"
+        ],
+
+        "category": "Computer Science"
+    },
+
+
+    {
+        "topic": "Water",
+
+        "keywords": [
+            "water",
+            "nsuo",
+            "liquid"
+        ],
+
+        "definition": "Water is a natural liquid essential for life.",
+
+        "explanation": "Water supports humans, animals and plants. It is used for drinking, agriculture and industrial activities.",
+
+        "examples": [
+            "Rain",
+            "Rivers",
+            "Oceans"
+        ],
+
+        "category": "Nature"
+    }
+
+]

@@ -1,119 +1,180 @@
 import json
 import os
-
-# ---------------------------------------------------
-# KNOWLEDGE ENGINE
-# ---------------------------------------------------
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_FOLDER = os.path.join(BASE_DIR, "data")
+import re
 
 
-# ---------------------------------------------------
-# LOAD ALL SUBJECTS
-# ---------------------------------------------------
+# ---------------------------------------
+# LOAD EDUCATIONAL KNOWLEDGE BASE
+# ---------------------------------------
 
-def load_subjects():
+def load_knowledge():
 
-    knowledge = []
+    base_dir = os.path.dirname(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        )
+    )
 
-    for filename in os.listdir(DATA_FOLDER):
-
-        # Skip the Akan dictionary
-        if filename == "akan_lexical_knowledge_base.json":
-            continue
-
-        if filename.endswith(".json"):
-
-            filepath = os.path.join(DATA_FOLDER, filename)
-
-            try:
-
-                with open(filepath, "r", encoding="utf-8") as file:
-
-                    data = json.load(file)
-
-                    if isinstance(data, list):
-                        knowledge.extend(data)
-
-                    elif isinstance(data, dict):
-                        knowledge.append(data)
-
-            except Exception as e:
-
-                print(f"Cannot load {filename}: {e}")
-
-    return knowledge
+    file_path = os.path.join(
+        base_dir,
+        "data",
+        "educational_knowledge.json"
+    )
 
 
-knowledge_base = load_subjects()
+    with open(
+        file_path,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        return json.load(file)
 
 
-# ---------------------------------------------------
-# SEARCH KNOWLEDGE
-# ---------------------------------------------------
+
+knowledge_base = load_knowledge()
+
+
+
+# ---------------------------------------
+# TEXT CLEANER
+# ---------------------------------------
+
+def clean_text(text):
+
+    text = text.lower()
+
+    text = re.sub(
+        r"[^a-zA-Z0-9\s]",
+        "",
+        text
+    )
+
+    return text
+
+
+
+# ---------------------------------------
+# KEYWORD MATCHING ENGINE
+# ---------------------------------------
+
+def calculate_score(question, item):
+
+
+    question = clean_text(question)
+
+
+    score = 0
+
+
+    keywords = item.get(
+        "keywords",
+        []
+    )
+
+
+    topic = item.get(
+        "topic",
+        ""
+    )
+
+
+    # keyword matching
+
+    for keyword in keywords:
+
+        keyword = clean_text(keyword)
+
+
+        if keyword in question:
+
+            score += 3
+
+
+
+    # topic matching
+
+    if clean_text(topic) in question:
+
+        score += 5
+
+
+
+    return score
+
+
+
+
+# ---------------------------------------
+# KNOWLEDGE SEARCH ENGINE
+# ---------------------------------------
 
 def search_knowledge(question):
 
-    question = question.lower()
 
-    for topic in knowledge_base:
+    best_match = None
 
-        keywords = topic.get("keywords", [])
+    highest_score = 0
 
-        keywords = [k.lower() for k in keywords]
 
-        title = topic.get("topic", "").lower()
 
-        if title in question:
+    for item in knowledge_base:
 
-            return topic
 
-        for word in keywords:
+        score = calculate_score(
+            question,
+            item
+        )
 
-            if word in question:
-                return topic
+
+        if score > highest_score:
+
+            highest_score = score
+
+            best_match = item
+
+
+
+    if highest_score > 0:
+
+        return best_match
+
+
 
     return None
 
 
-# ---------------------------------------------------
-# FORMAT EDUCATIONAL RESPONSE
-# ---------------------------------------------------
 
-def format_knowledge(topic):
 
-    response = f"""
-📚 Subject: {topic.get('subject','Unknown')}
+# ---------------------------------------
+# FORMAT RESPONSE
+# ---------------------------------------
 
-📖 Topic:
-{topic.get('topic','')}
+def format_knowledge(result):
 
-🇬🇧 English Explanation
 
-{topic.get('definition_en','No definition available.')}
+    return f"""
 
-🇬🇭 Akan Explanation
+📚 Educational Knowledge Assistant
 
-{topic.get('definition_twi','No Akan explanation available.')}
 
-⭐ Importance
+Topic:
+{result.get('topic','Unknown')}
 
-{topic.get('importance_en','')}
 
-📝 Example
+Definition:
+{result.get('definition','No definition available')}
 
-{topic.get('example_en','')}
 
-{topic.get('example_twi','')}
+Explanation:
+{result.get('explanation','No explanation available')}
 
-❓ Quiz
 
-{topic.get('quiz_question','')}
+Examples:
+{', '.join(result.get('examples',[]))}
 
-✅ Answer
 
-{topic.get('quiz_answer','')}
+Category:
+{result.get('category','General')}
+
 """
-
-    return response

@@ -1,9 +1,19 @@
 from model.intent_engine import detect_intent, extract_topic
-from model.akan_engine import search_akan, format_akan_response
-from model.knowledge_engine import search_knowledge, format_knowledge
+
+from model.akan_engine import (
+    search_akan,
+    format_akan_response
+)
+
+from model.knowledge_engine import (
+    search_knowledge,
+    format_knowledge
+)
+
 from model.response_engine import create_response
 
 from duckduckgo_search import DDGS
+
 
 
 # ---------------------------------------
@@ -25,6 +35,7 @@ def detect_language(question):
     ]
 
     for word in akan_words:
+
         if word in q:
             return "akan"
 
@@ -40,7 +51,8 @@ def web_search(question):
 
     try:
 
-        print("🌍 Searching web:", question)
+        print("🌍 Searching Web:", question)
+
 
         with DDGS() as ddgs:
 
@@ -54,16 +66,64 @@ def web_search(question):
 
                 body = result.get("body")
 
+
                 if body and len(body) > 100:
+
                     return body
 
 
     except Exception as e:
 
-        print("Web Error:", e)
+        print(
+            "Web Error:",
+            e
+        )
 
 
     return None
+
+
+
+# ---------------------------------------
+# COMBINE ANSWERS
+# ---------------------------------------
+
+def combine_answers(
+        akan_answer=None,
+        knowledge_answer=None,
+        web_answer=None
+):
+
+    response = ""
+
+
+    if akan_answer:
+
+        response += (
+            "\n🇬🇭 Akan Language Information\n"
+            + akan_answer
+            + "\n"
+        )
+
+
+    if knowledge_answer:
+
+        response += (
+            "\n📚 Educational Explanation\n"
+            + knowledge_answer
+            + "\n"
+        )
+
+
+    if web_answer:
+
+        response += (
+            "\n🌍 Additional Information\n"
+            + web_answer
+        )
+
+
+    return response
 
 
 
@@ -78,63 +138,46 @@ def get_answer(question):
     print("USER:", question)
 
 
-    # 1. Detect language
     language = detect_language(question)
 
-    print(
-        "Language:",
-        language
-    )
 
-
-    # 2. Detect intent
     intent = detect_intent(question)
 
-    print(
-        "Intent:",
-        intent
-    )
 
-
-    # 3. Extract topic
     topic = extract_topic(question)
 
-    print(
-        "Topic:",
-        topic
-    )
+
+
+    print("Language:", language)
+    print("Intent:", intent)
+    print("Topic:", topic)
+
+
+
+    akan_answer = None
+    knowledge_answer = None
+    web_answer = None
 
 
 
     # -----------------------------------
-    # A. AKAN LANGUAGE REQUEST
+    # 1. AKAN ENGINE
     # -----------------------------------
 
-    if language == "akan":
+    akan_result, mode = search_akan(topic)
 
 
-        akan_result, mode = search_akan(topic)
+    if akan_result:
 
 
-        if akan_result:
-
-
-            answer = format_akan_response(
-                akan_result
-            )
-
-
-            return create_response(
-                answer,
-                "🇬🇭 Akan Knowledge Base",
-                intent,
-                language
-            ), "🇬🇭 Akan Engine"
+        akan_answer = format_akan_response(
+            akan_result
+        )
 
 
 
     # -----------------------------------
-    # B. EDUCATIONAL KNOWLEDGE SEARCH
+    # 2. KNOWLEDGE ENGINE
     # -----------------------------------
 
     knowledge = search_knowledge(topic)
@@ -143,45 +186,49 @@ def get_answer(question):
     if knowledge:
 
 
-        answer = format_knowledge(
+        knowledge_answer = format_knowledge(
             knowledge
         )
 
 
+
+    # -----------------------------------
+    # 3. WEB ENGINE
+    # -----------------------------------
+
+    if not knowledge_answer:
+
+
+        web_answer = web_search(question)
+
+
+
+    # -----------------------------------
+    # FINAL RESPONSE
+    # -----------------------------------
+
+    final_answer = combine_answers(
+        akan_answer,
+        knowledge_answer,
+        web_answer
+    )
+
+
+
+    if final_answer.strip():
+
+
         return create_response(
-            answer,
-            "📚 Educational Knowledge Base",
+            final_answer,
+            "🧠 Multi Knowledge Engine",
             intent,
             language
-        ), "📚 Knowledge Engine"
+        ), "🧠 Intelligent Router"
 
 
-
-    # -----------------------------------
-    # C. WEB FALLBACK
-    # -----------------------------------
-
-    web_answer = web_search(question)
-
-
-    if web_answer:
-
-
-        return create_response(
-            web_answer,
-            "🌍 Web Knowledge",
-            intent,
-            language
-        ), "🌍 Web Engine"
-
-
-
-    # -----------------------------------
-    # D. NO RESULT
-    # -----------------------------------
 
     return create_response(
-        "Sorry, I could not find enough information about this topic.",
+        "Sorry, I could not find enough information.",
         "⚠️ System",
         intent,
         language
